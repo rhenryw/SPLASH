@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPLASH</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/surf/baremux/index.js"></script>
+    <script src="/surf/scram/scramjet.all.js"></script>
+    <script src="/app.js" defer></script>
+</head>
+<body class="mode-terminal">
+    <div id="app">
+        <div id="proxy-shell">
+            <iframe id="proxy-frame" title="SPLASH Proxy"></iframe>
+            <div id="proxy-loading">
+                <pre id="proxy-loading-art">     ___       ___       ___       ___       ___       ___       ___   
+   /\__\     /\  \     /\  \     /\  \     /\  \     /\__\     /\  \  
+  /:/  /    /::\  \   /::\  \   /::\  \   _\:\  \   /:| _|_   /::\  \ 
+ /:/__/    /:/\:\__\ /::\:\__\ /:/\:\__\ /\/::\__\ /::|/\__\ /:/\:\__\
+ \:\  \    \:\/:/  / \/\::/  / \:\/:/  / \::/\/__/ \/|::/  / \:\:\/__/
+  \:\__\    \::/  /    /:/  /   \::/  /   \:\__\     |:/  /   \::/  / 
+   \/__/     \/__/     \/__/     \/__/     \/__/     \/__/     \/__/  </pre>
+            </div>
+            <div id="proxy-watermark">
+                <pre class="watermark-logo" id="watermark-logo"></pre>
+                <div class="watermark-hint">ctrl + `</div>
+            </div>
+        </div>
+        <div id="terminal-shell">
+            <div id="term">
+                <div id="term-header">SPLASH</div>
+                <div id="term-output">
+                    <div id="term-status">
+                        <span class="term-status-label">url:</span>
+                        <span id="term-location"></span>
+                    </div>
+                    <div id="term-input-row">
+                        <span id="term-prefix">root@splash:~$</span>
+                        <input id="term-input" autocomplete="off" spellcheck="false" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
