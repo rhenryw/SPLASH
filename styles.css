@@ -237,6 +237,10 @@ body.mode-proxy.overlay-open #terminal-shell {
     pointer-events: auto;
 }
 
+body.mode-proxy.overlay-open #term-status {
+    display: none;
+}
+
 body.mode-terminal #terminal-shell {
     transform: translateY(0);
     pointer-events: auto;

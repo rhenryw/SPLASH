@@ -15,16 +15,19 @@ const termInput = document.getElementById("term-input")
 const termInputRow = document.getElementById("term-input-row")
 const termHeader = document.getElementById("term-header")
 const termLocation = document.getElementById("term-location")
+const termPrefix = document.getElementById("term-prefix")
 
-let panicKey = localStorage.getItem("splash:panicKey") || ""
-let wispUrl = localStorage.getItem("splash:wispUrl") || "wss://wisp.rhw.one/"
-let adblockEnabled = localStorage.getItem("splash:adblockEnabled")
+let panicKey = getSetting("splash:panicKey", "") || ""
+let wispUrl = getSetting("splash:wispUrl", "wss://wisp.rhw.one/") || "wss://wisp.rhw.one/"
+let adblockEnabled = getSetting("splash:adblockEnabled", null)
 adblockEnabled = adblockEnabled === null ? true : adblockEnabled === "true"
-let homeNewTab = localStorage.getItem("splash:homeNewTab")
+let homeNewTab = getSetting("splash:homeNewTab", null)
 homeNewTab = homeNewTab === "true"
 let currentTarget = ""
 let overlayOpen = false
 let frameKeyTarget = null
+let frameNavTarget = null
+let frameReadyTimer = null
 let locationTimer = null
 let lastLocationValue = ""
 let lastHashValue = ""
@@ -97,6 +100,32 @@ function decodeTarget(encoded) {
     return fromBase64(vigenereDecode(encoded, cipherKey))
 }
 
+function getCookieValue(name) {
+    const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))
+    return match ? decodeURIComponent(match[1]) : null
+}
+
+function setCookieValue(name, value) {
+    const encoded = encodeURIComponent(value)
+    document.cookie = `${name}=${encoded}; path=/; max-age=31536000`
+}
+
+function getSetting(name, fallback) {
+    const stored = localStorage.getItem(name)
+    if (stored !== null) return stored
+    const cookie = getCookieValue(name)
+    if (cookie !== null) {
+        localStorage.setItem(name, cookie)
+        return cookie
+    }
+    return fallback
+}
+
+function setSetting(name, value) {
+    localStorage.setItem(name, value)
+    setCookieValue(name, value)
+}
+
 function normalizeUrl(input) {
     let url = input.trim()
     if (!url) return ""
@@ -147,13 +176,13 @@ function openTarget(raw, inNewTab) {
 
 function setWispUrl(next) {
     wispUrl = next
-    localStorage.setItem("splash:wispUrl", next)
+    setSetting("splash:wispUrl", next)
     connection.setTransport("/surf/libcurl/index.mjs", [{ websocket: wispUrl }])
 }
 
 function setPanicKey(next) {
     panicKey = next.toLowerCase()
-    localStorage.setItem("splash:panicKey", panicKey)
+    setSetting("splash:panicKey", panicKey)
 }
 
 function sendAdblockSetting() {
@@ -165,13 +194,13 @@ function sendAdblockSetting() {
 
 function setAdblockEnabled(next) {
     adblockEnabled = next
-    localStorage.setItem("splash:adblockEnabled", String(next))
+    setSetting("splash:adblockEnabled", String(next))
     sendAdblockSetting()
 }
 
 function setHomeNewTab(next) {
     homeNewTab = next
-    localStorage.setItem("splash:homeNewTab", String(next))
+    setSetting("splash:homeNewTab", String(next))
 }
 
 function handleGlobalKeydown(event) {
@@ -199,9 +228,58 @@ function attachFrameHotkeys() {
     }
 }
 
+function handleFrameLoading() {
+    setProxyLoading(true)
+}
+
+function attachFrameLoadingListeners() {
+    try {
+        if (frameNavTarget) {
+            frameNavTarget.removeEventListener("beforeunload", handleFrameLoading, true)
+            frameNavTarget.removeEventListener("pagehide", handleFrameLoading, true)
+        }
+        if (frame.contentWindow) {
+            frameNavTarget = frame.contentWindow
+            frameNavTarget.addEventListener("beforeunload", handleFrameLoading, true)
+            frameNavTarget.addEventListener("pagehide", handleFrameLoading, true)
+        }
+    } catch (error) {
+        frameNavTarget = null
+    }
+}
+
+function stopFrameReadyWatch() {
+    if (frameReadyTimer) {
+        clearInterval(frameReadyTimer)
+        frameReadyTimer = null
+    }
+}
+
+function startFrameReadyWatch() {
+    if (frameReadyTimer) return
+    frameReadyTimer = setInterval(() => {
+        if (!proxyLoading || !proxyLoading.classList.contains("show")) {
+            stopFrameReadyWatch()
+            return
+        }
+        try {
+            const doc = frame.contentDocument
+            if (doc && (doc.readyState === "interactive" || doc.readyState === "complete")) {
+                setProxyLoading(false)
+            }
+        } catch (error) {
+        }
+    }, 200)
+}
+
 function setProxyLoading(isVisible) {
     if (!proxyLoading) return
     proxyLoading.classList.toggle("show", isVisible)
+    if (isVisible) {
+        startFrameReadyWatch()
+    } else {
+        stopFrameReadyWatch()
+    }
 }
 
 function closeInstantly() {
@@ -214,6 +292,11 @@ function closeInstantly() {
 function setOverlayInput(value) {
     termInput.value = value || ""
     termInput.setSelectionRange(termInput.value.length, termInput.value.length)
+}
+
+function setTermPrefix(value) {
+    if (!termPrefix) return
+    termPrefix.textContent = value
 }
 
 function setLocationLabel(value) {
@@ -250,6 +333,9 @@ function updateLocationLabel() {
                 window.location.hash = nextHash
             }
         }
+        if (overlayOpen && document.activeElement !== termInput) {
+            setOverlayInput(value)
+        }
     }
 }
 
@@ -271,7 +357,8 @@ function toggleOverlay() {
     overlayOpen = !overlayOpen
     document.body.classList.toggle("overlay-open", overlayOpen)
     if (overlayOpen) {
-        setOverlayInput(currentTarget)
+        setTermPrefix("root@splash:~$")
+        setOverlayInput(getDecodedLocation() || currentTarget)
         focusInput()
         startLocationPolling()
     } else {
@@ -288,6 +375,7 @@ function goHome() {
     updateMode("mode-terminal")
     frame.src = "about:blank"
     setOverlayInput("")
+    setTermPrefix("root@splash:~$")
 }
 
 function handleDev() {
@@ -456,6 +544,7 @@ async function init() {
     frame.addEventListener("load", () => {
         setProxyLoading(false)
         attachFrameHotkeys()
+        attachFrameLoadingListeners()
         if (overlayOpen) {
             startLocationPolling()
         }
@@ -485,7 +574,10 @@ window.addEventListener("hashchange", () => {
     try {
         const url = decodeTarget(token)
         updateMode("mode-proxy")
-        openInFrame(url)
+        const liveUrl = getDecodedLocation()
+        if (url !== currentTarget && url !== liveUrl) {
+            openInFrame(url)
+        }
         if (overlayOpen) {
             startLocationPolling()
         }
