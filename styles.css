@@ -82,8 +82,9 @@ body {
   align-items: flex-end;
   gap: 6px;
   opacity: 0.5;
-  pointer-events: none;
+  pointer-events: auto;
   color: #b8ffe0;
+  cursor: pointer;
 }
 
 .watermark-logo {

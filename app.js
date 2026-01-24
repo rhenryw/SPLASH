@@ -16,6 +16,7 @@ const termInputRow = document.getElementById("term-input-row");
 const termHeader = document.getElementById("term-header");
 const termLocation = document.getElementById("term-location");
 const termPrefix = document.getElementById("term-prefix");
+const proxyWatermark = document.getElementById("proxy-watermark");
 
 let panicKey = getSetting("splash:panicKey", "") || "";
 let wispUrl = getSetting("splash:wispUrl", "wss://wisp.rhw.one/") || "wss://wisp.rhw.one/";
@@ -23,6 +24,8 @@ let adblockEnabled = getSetting("splash:adblockEnabled", null);
 adblockEnabled = adblockEnabled === null ? true : adblockEnabled === "true";
 let homeNewTab = getSetting("splash:homeNewTab", null);
 homeNewTab = homeNewTab === "true";
+let preventCloseEnabled = getSetting("splash:preventClose", null);
+preventCloseEnabled = preventCloseEnabled === "true";
 let currentTarget = "";
 let overlayOpen = false;
 let frameKeyTarget = null;
@@ -138,6 +141,18 @@ function normalizeUrl(input) {
   return url;
 }
 
+function getInjectedTarget(token) {
+  const lower = token.toLowerCase();
+  if (!lower.startsWith("inject=")) return null;
+  const raw = token.slice(7);
+  if (!raw) return "";
+  try {
+    return decodeURIComponent(raw);
+  } catch (error) {
+    return raw;
+  }
+}
+
 function updateMode(mode) {
   document.body.classList.remove("mode-terminal", "mode-proxy");
   document.body.classList.add(mode);
@@ -203,7 +218,20 @@ function setHomeNewTab(next) {
   setSetting("splash:homeNewTab", String(next));
 }
 
+function setPreventCloseEnabled(next) {
+  preventCloseEnabled = next;
+  setSetting("splash:preventClose", String(next));
+}
+
 function handleGlobalKeydown(event) {
+  if (overlayOpen && event.ctrlKey && event.key.toLowerCase() === "d") {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    goHome();
+    appendOutput("Returned home");
+    return;
+  }
   if (event.ctrlKey && panicKey && event.key.toLowerCase() === panicKey) {
     closeInstantly();
     return;
@@ -449,7 +477,9 @@ games: list available game names
 game {gamename}: open a game
 panic {key}: set ctrl+key panic close
 adblock {y/n}: enable or disable adblock
+preventclose {y/n}: toggle leave page warning
 home: confirm return to home (overlay only)
+exit: return to home (overlay only)
 newtab {y/n}: new tab from home
 dev: dev tools placeholder
 type a url or search term to open
@@ -518,6 +548,16 @@ function handleCommand(value) {
     appendOutput(`Adblock ${next === "y" ? "enabled" : "disabled"}`);
     return;
   }
+  if (lower.startsWith("preventclose ")) {
+    const next = value.slice(13).trim().toLowerCase();
+    if (next !== "y" && next !== "n") {
+      appendOutput("Use preventclose y or preventclose n", "#ff6b6b");
+      return;
+    }
+    setPreventCloseEnabled(next === "y");
+    appendOutput(`Prevent close ${next === "y" ? "enabled" : "disabled"}`);
+    return;
+  }
   if (lower.startsWith("newtab ")) {
     if (document.body.classList.contains("mode-proxy")) {
       appendOutput("newtab is only available from home", "#ff6b6b");
@@ -530,6 +570,15 @@ function handleCommand(value) {
     }
     setHomeNewTab(next === "y");
     appendOutput(`New tab ${next === "y" ? "enabled" : "disabled"}`);
+    return;
+  }
+  if (lower === "exit") {
+    if (!document.body.classList.contains("mode-proxy")) {
+      appendOutput("Already home");
+      return;
+    }
+    goHome();
+    appendOutput("Returned home");
     return;
   }
   if (lower === "home") {
@@ -573,6 +622,12 @@ document.addEventListener("keydown", (event) => {
   handleGlobalKeydown(event);
 });
 
+window.addEventListener("beforeunload", (event) => {
+  if (!preventCloseEnabled) return;
+  event.preventDefault();
+  event.returnValue = "";
+});
+
 navigator.serviceWorker.addEventListener("controllerchange", () => {
   sendAdblockSetting();
 });
@@ -594,6 +649,18 @@ async function init() {
   });
   const token = window.location.hash.replace(/^#/, "");
   if (token) {
+    const injected = getInjectedTarget(token);
+    if (injected !== null) {
+      if (injected) {
+        updateMode("mode-proxy");
+        openTarget(injected, false);
+      } else {
+        updateMode("mode-terminal");
+        appendOutput("Missing url", "#ff6b6b");
+        focusInput();
+      }
+      return;
+    }
     try {
       const url = decodeTarget(token);
       updateMode("mode-proxy");
@@ -612,6 +679,16 @@ window.addEventListener("hashchange", () => {
   const token = window.location.hash.replace(/^#/, "");
   if (!token) {
     updateMode("mode-terminal");
+    return;
+  }
+  const injected = getInjectedTarget(token);
+  if (injected !== null) {
+    if (injected) {
+      updateMode("mode-proxy");
+      openTarget(injected, false);
+    } else {
+      updateMode("mode-terminal");
+    }
     return;
   }
   try {
@@ -650,4 +727,9 @@ appendOutput(
 );
 appendOutput("enter url to open page, or type help for list of commands", "#d9ffe8");
 focusInput();
+if (proxyWatermark) {
+  proxyWatermark.addEventListener("click", () => {
+    toggleOverlay();
+  });
+}
 init();
