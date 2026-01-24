@@ -378,8 +378,54 @@ function goHome() {
 }
 
 function handleDev() {
-  appendOutput("Dev tools not implemented", "yellow");
-  focusInput();
+    if (!document.body.classList.contains("mode-proxy")) {
+        appendOutput("Dev tools only work in proxy mode", "#ff6b6b")
+        focusInput()
+        return
+    }
+    try {
+        const doc = frame.contentDocument
+        if (!doc) {
+            appendOutput("Dev tools unavailable for this page", "#ff6b6b")
+            focusInput()
+            return
+        }
+        const existing = doc.querySelector('script[data-splash-eruda="loader"]')
+        const initEruda = () => {
+            try {
+                if (doc.defaultView && doc.defaultView.eruda) {
+                    doc.defaultView.eruda.init({ autoScale: true })
+                    doc.defaultView.eruda.position({ x: 20, y: 20 })
+                }
+            } catch (error) {
+            }
+        }
+        if (!existing) {
+            let head = doc.head
+            if (!head) {
+                head = doc.createElement("head")
+                const first = doc.documentElement.firstChild
+                if (first) {
+                    doc.documentElement.insertBefore(head, first)
+                } else {
+                    doc.documentElement.appendChild(head)
+                }
+            }
+            const script = doc.createElement("script")
+            script.src = "https://cdn.jsdelivr.net/npm/eruda/eruda.min.js"
+            script.setAttribute("data-splash-eruda", "loader")
+            script.onload = () => {
+                initEruda()
+            }
+            head.appendChild(script)
+        } else if (doc.defaultView && doc.defaultView.eruda) {
+            initEruda()
+        }
+        appendOutput("Devtools injected, open using the icon on the top left of the page")
+    } catch (error) {
+        appendOutput("Dev tools unavailable for this page", "#ff6b6b")
+    }
+    focusInput()
 }
 
 function appendOutput(text, color) {
