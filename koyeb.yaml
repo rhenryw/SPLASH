@@ -1,0 +1,9 @@
+services:
+  - name: splash
+    type: web
+    build:
+      type: static
+      static:
+        assets: .
+    routes:
+      - path: /

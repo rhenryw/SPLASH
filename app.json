@@ -1,0 +1,15 @@
+{
+  "name": "SPLASH",
+  "description": "Secure Proxy for Live Audiovisual SHell",
+  "repository": "https://github.com/rhenryw/SPLASH",
+  "keywords": [
+    "proxy",
+    "static",
+    "splash"
+  ],
+  "buildpacks": [
+    {
+      "url": "https://github.com/heroku/heroku-buildpack-static.git"
+    }
+  ]
+}

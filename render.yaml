@@ -1,0 +1,5 @@
+services:
+  - type: web
+    name: splash
+    env: static
+    staticPublishPath: .
