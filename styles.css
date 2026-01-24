@@ -1,247 +1,247 @@
 @import url("https://fonts.googleapis.com/css2?family=Ubuntu+Mono:wght@400;700&display=swap");
 
-html, body {
-    height: 100%;
-    margin: 0;
-    background: #0b0f0f;
-    font-family: "Ubuntu Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-    color: #e6f6ee;
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: #0b0f0f;
+  font-family: "Ubuntu Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  color: #e6f6ee;
 }
 
 body {
-    background: radial-gradient(circle at top, #0f1416 0%, #090c0d 55%, #050607 100%);
+  background: radial-gradient(circle at top, #0f1416 0%, #090c0d 55%, #050607 100%);
 }
 
 #app {
-    position: fixed;
-    inset: 0;
-    overflow: hidden;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
 }
 
 #proxy-shell {
-    position: fixed;
-    inset: 0;
-    background: #050607;
-    display: none;
+  position: fixed;
+  inset: 0;
+  background: #050607;
+  display: none;
 }
 
 #proxy-frame {
-    position: absolute;
-    inset: 0;
-    border: 0;
-    width: 100%;
-    height: 100%;
-    background: #050607;
+  position: absolute;
+  inset: 0;
+  border: 0;
+  width: 100%;
+  height: 100%;
+  background: #050607;
 }
 
 #proxy-loading {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(8, 10, 11, 0.35);
-    color: #e8fff4;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 10, 11, 0.35);
+  color: #e8fff4;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
 }
 
 #proxy-loading.show {
-    opacity: 1;
+  opacity: 1;
 }
 
 #proxy-loading-art {
-    font-family: inherit;
-    font-size: 14px;
-    line-height: 1.3;
-    white-space: pre;
-    color: #9affc6;
-    animation: loadingFloat 1.6s ease-in-out infinite;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.3;
+  white-space: pre;
+  color: #9affc6;
+  animation: loadingFloat 1.6s ease-in-out infinite;
 }
 
 @keyframes loadingFloat {
-    0% {
-        transform: translateY(0);
-    }
-    50% {
-        transform: translateY(-10px);
-    }
-    100% {
-        transform: translateY(0);
-    }
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0);
+  }
 }
 
 #proxy-watermark {
-    position: absolute;
-    right: 16px;
-    bottom: 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 6px;
-    opacity: 0.5;
-    pointer-events: none;
-    color: #b8ffe0;
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  opacity: 0.5;
+  pointer-events: none;
+  color: #b8ffe0;
 }
 
 .watermark-logo {
-    margin: 0;
-    font-family: inherit;
-    font-size: 10px;
-    line-height: 1.1;
-    white-space: pre;
+  margin: 0;
+  font-family: inherit;
+  font-size: 10px;
+  line-height: 1.1;
+  white-space: pre;
 }
 
 .watermark-hint {
-    font-size: 12px;
-    letter-spacing: 0.08em;
-    text-transform: lowercase;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
 }
 
 #terminal-shell {
-    position: fixed;
-    inset: 0;
-    background: #0b0f0f;
-    transition: transform 0.2s ease;
-    box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.7);
+  position: fixed;
+  inset: 0;
+  background: #0b0f0f;
+  transition: transform 0.2s ease;
+  box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.7);
 }
 
 #term {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    padding: 28px 30px 22px;
-    box-sizing: border-box;
-    background: transparent;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 28px 30px 22px;
+  box-sizing: border-box;
+  background: transparent;
 }
 
 #term-header {
-    color: #7bffb4;
-    font-size: 14px;
-    letter-spacing: 0.2em;
+  color: #7bffb4;
+  font-size: 14px;
+  letter-spacing: 0.2em;
 }
 
 #term-output {
-    flex: 1;
-    overflow-y: auto;
-    font-size: 15px;
-    line-height: 1.55;
-    padding-right: 8px;
-    margin-top: 16px;
+  flex: 1;
+  overflow-y: auto;
+  font-size: 15px;
+  line-height: 1.55;
+  padding-right: 8px;
+  margin-top: 16px;
 }
 
 #term-status {
-    display: none;
-    gap: 8px;
-    font-size: 13px;
-    color: #9ed9c2;
-    margin-bottom: 8px;
+  display: none;
+  gap: 8px;
+  font-size: 13px;
+  color: #9ed9c2;
+  margin-bottom: 8px;
 }
 
 .term-status-label {
-    color: #6effb2;
-    text-transform: lowercase;
+  color: #6effb2;
+  text-transform: lowercase;
 }
 
 #term-location {
-    color: #c8f7e2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 60vw;
+  color: #c8f7e2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60vw;
 }
 
-
 .term-line {
-    margin: 3px 0;
-    white-space: pre-wrap;
-    word-break: break-word;
+  margin: 3px 0;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .term-pre {
-    font-family: inherit;
-    color: #f0fff6;
-    margin: 8px 0 14px;
-    white-space: pre;
+  font-family: inherit;
+  color: #f0fff6;
+  margin: 8px 0 14px;
+  white-space: pre;
 }
 
 #term-input-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding-top: 0;
-    margin-top: 6px;
+  display: flex;
+  align-items: center;
+  padding-top: 0;
+  margin-top: 6px;
 }
 
 #term-prefix {
-    color: #6effb2;
+  color: #6effb2;
 }
 
 #term-input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: #f4fff9;
-    font-size: 15px;
-    font-family: inherit;
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #f4fff9;
+  font-size: 15px;
+  font-family: inherit;
+  margin-left: 0;
 }
 
 #term-output a {
-    color: #76ffd3;
-    text-decoration: none;
+  color: #76ffd3;
+  text-decoration: none;
 }
 
 #term-output a:hover {
-    text-decoration: underline;
+  text-decoration: underline;
 }
 
 body.mode-proxy #proxy-shell {
-    display: block;
+  display: block;
 }
 
 body.mode-proxy #terminal-shell {
-    height: 32vh;
-    width: min(760px, 84vw);
-    left: 50%;
-    top: auto;
-    right: auto;
-    bottom: 16px;
-    transform: translate(-50%, 100%);
-    pointer-events: none;
-    border: 1px solid #2a2f2f;
-    border-radius: 10px;
-    background: rgba(22, 24, 28, 0.96);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  height: 32vh;
+  width: min(760px, 84vw);
+  left: 50%;
+  top: auto;
+  right: auto;
+  bottom: 16px;
+  transform: translate(-50%, 100%);
+  pointer-events: none;
+  border: 1px solid #2a2f2f;
+  border-radius: 10px;
+  background: rgba(22, 24, 28, 0.96);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
 }
 
 body.mode-proxy #term-status {
-    display: flex;
+  display: flex;
 }
 
 body.mode-proxy #term-location {
-    max-width: 50vw;
+  max-width: 50vw;
 }
 
 body.mode-proxy #term-header {
-    display: none;
+  display: none;
 }
 
 body.mode-proxy .term-pre {
-    display: none;
+  display: none;
 }
 
 body.mode-proxy.overlay-open #terminal-shell {
-    transform: translate(-50%, 0);
-    pointer-events: auto;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
 }
 
 body.mode-proxy.overlay-open #term-status {
-    display: none;
+  display: none;
 }
 
 body.mode-terminal #terminal-shell {
-    transform: translateY(0);
-    pointer-events: auto;
+  transform: translateY(0);
+  pointer-events: auto;
 }
