@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://splash.rhw.one/logo.png" alt="SPLASH logo" width="220">
+  <img src="logo.svg" alt="SPLASH logo" width="220">
 </p>
 <h2 align="center">
   root@splash:~$ a modern web proxy
@@ -12,6 +12,7 @@ SPLASH is a modern web proxy with a user interface similar to a terminal.
 For a list of commands, run `help`.
 
 ## Development
+
 Use Vite: `npx vite`, `bunx vite`, or `deno run npm:vite` whichever floats your boat
 
 ## Deploy yourself
@@ -19,7 +20,7 @@ Use Vite: `npx vite`, `bunx vite`, or `deno run npm:vite` whichever floats your 
 > [!NOTE]
 > Deployment config files for each provider are included in this repo.
 
-I recommend Netlify or Render: 
+I recommend Netlify or Render:
 </br>
 
 [![Deploy to Netlify](https://binbashbanana.github.io/deploy-buttons/buttons/remade/netlify.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/rhenryw/SPLASH)
@@ -27,7 +28,6 @@ I recommend Netlify or Render:
 </br>
 
 [![Deploy to Render](https://binbashbanana.github.io/deploy-buttons/buttons/remade/render.svg)](https://render.com/deploy?repo=https://github.com/rhenryw/SPLASH)
-
 
 or:
 
