@@ -594,6 +594,8 @@ if (watermarkLogo) {
 }
 appendOutput("<pre class=\"term-pre\">      ___           ___           ___       ___           ___           ___     \n     /\\  \\         /\\  \\         /\\__\\     /\\  \\         /\\  \\         /\\__\\    \n    /::\\  \\       /::\\  \\       /:/  /    /::\\  \\       /::\\  \\       /:/  /    \n   /:/\\ \\  \\     /:/\\:\\  \\     /:/  /    /:/\\:\\  \\     /:/\\ \\  \\     /:/__/     \n  _\\:\\~\\ \\  \\   /::\\~\\:\\  \\   /:/  /    /::\\~\\:\\  \\   _\\:\\~\\ \\  \\   /::\\  \\ ___ \n /\\ \\:\\ \\ \\__\\ /:/\\:\\ \\:\\__\\ /:/__/    /:/\\:\\ \\:\\__\\ /\\ \\:\\ \\ \\__\\ /:/\\:\\  /\\__\\\n \\:\\ \\:\\ \\/__/ \\/__\\:\\/:/  / \\:\\  \\    \\/__\\:\\/:/  / \\:\\ \\:\\ \\/__/ \\/__\\:\\/:/  /\n  \\:\\ \\:\\__\\        \\::/  /   \\:\\  \\        \\::/  /   \\:\\ \\:\\__\\        \\::/  / \n   \\:\\/\\:/  /         \\/__/     \\:\\  \\       /:/  /     \\:\\/\\:/  /        /:/  /  \n    \\::/  /                     \\:\\__\\     /:/  /       \\::/  /        /:/  /   \n     \\/__/                       \\/__/     \\/__/         \\/__/         \\/__/    </pre>")
 appendOutput("Welcome to SPLASH", "#a0ffcf")
+appendOutput('join our discord: <a href="https://discord.gg/n5AfXS5eTP" target="_blank" rel="noopener">discord.gg/n5AfXS5eTP</a>', "#a0ffcf")
+appendOutput('created and maintained by <a href="https://rhw.one" target="_blank" rel="noopener">rhw</a>, <a href="https://github.com/rhenryw/SPLASH" target="_blank" rel="noopener">github</a>', "#a0ffcf")
 appendOutput("enter url to open page, or type help for list of commands", "#d9ffe8")
 focusInput()
 init()
