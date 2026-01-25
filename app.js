@@ -1,8 +1,10 @@
-const games = {
-  asteroids: "https://www.freegamearchive.com/game/asteroids",
-  snake: "https://playsnake.org",
-  tetris: "https://tetris.com/play-tetris",
+const gamesCdnUrl = "https://cdn.jsdelivr.net/gh/rhenryw/SPLASHGames@main/games.json";
+const gamesStorage = {
+  recents: "splash:games:recents",
+  favorites: "splash:games:favorites",
 };
+const defaultPrompt = "root@splash:~$";
+const processPrompt = ">";
 
 const cipherKey = "SPLASH";
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
@@ -16,6 +18,8 @@ const termInputRow = document.getElementById("term-input-row");
 const termHeader = document.getElementById("term-header");
 const termLocation = document.getElementById("term-location");
 const termPrefix = document.getElementById("term-prefix");
+const termCursor = document.getElementById("term-cursor");
+const termCursorMeasure = document.getElementById("term-cursor-measure");
 const proxyWatermark = document.getElementById("proxy-watermark");
 
 let panicKey = getSetting("splash:panicKey", "") || "";
@@ -35,6 +39,19 @@ let locationTimer = null;
 let lastLocationValue = "";
 let lastHashValue = "";
 let pendingConfirm = null;
+let gamesData = [];
+let gamesIndex = new Map();
+let gamesLoaded = false;
+let gamesLoading = null;
+let gamesPanel = null;
+let gamesUi = {
+  active: false,
+  mode: "",
+  allowKeyboard: true,
+  selectionIndex: 0,
+  visibleGames: [],
+  query: "",
+};
 
 const connection = new BareMux.BareMuxConnection("/surf/baremux/worker.js");
 const { ScramjetController } = $scramjetLoadController();
@@ -127,6 +144,37 @@ function getSetting(name, fallback) {
 function setSetting(name, value) {
   localStorage.setItem(name, value);
   setCookieValue(name, value);
+}
+
+function escapeHtml(value) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function updatePrompt() {
+  if (pendingConfirm || gamesUi.active) {
+    setTermPrefix(processPrompt);
+  } else {
+    setTermPrefix(defaultPrompt);
+  }
+}
+
+function updateCursor() {
+  if (!termCursor || !termCursorMeasure || !termInput) return;
+  const isFocused = document.activeElement === termInput;
+  termCursor.classList.toggle("hidden", !isFocused);
+  const prefixWidth = termPrefix ? termPrefix.offsetWidth : 0;
+  const value = termInput.value || "";
+  const selectionStart =
+    typeof termInput.selectionStart === "number" ? termInput.selectionStart : value.length;
+  termCursorMeasure.textContent = value.slice(0, selectionStart);
+  const width = termCursorMeasure.offsetWidth;
+  termCursor.style.left = `${prefixWidth}px`;
+  termCursor.style.transform = `translate(${width}px, -50%)`;
 }
 
 function normalizeUrl(input) {
@@ -319,11 +367,13 @@ function closeInstantly() {
 function setOverlayInput(value) {
   termInput.value = value || "";
   termInput.setSelectionRange(termInput.value.length, termInput.value.length);
+  updateCursor();
 }
 
 function setTermPrefix(value) {
   if (!termPrefix) return;
-  termPrefix.textContent = value;
+  termPrefix.textContent = value ? `${value} ` : "";
+  updateCursor();
 }
 
 function setLocationLabel(value) {
@@ -384,7 +434,7 @@ function toggleOverlay() {
   overlayOpen = !overlayOpen;
   document.body.classList.toggle("overlay-open", overlayOpen);
   if (overlayOpen) {
-    setTermPrefix("root@splash:~$");
+    updatePrompt();
     setOverlayInput(getDecodedLocation() || currentTarget);
     focusInput();
     startLocationPolling();
@@ -402,7 +452,7 @@ function goHome() {
   updateMode("mode-terminal");
   frame.src = "about:blank";
   setOverlayInput("");
-  setTermPrefix("root@splash:~$");
+  updatePrompt();
 }
 
 function handleDev() {
@@ -471,10 +521,374 @@ function focusInput() {
   termInput.focus();
 }
 
+function getStoredList(key) {
+  const raw = localStorage.getItem(key);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item) => typeof item === "string" && item.trim());
+  } catch (error) {
+    return [];
+  }
+}
+
+function setStoredList(key, list) {
+  localStorage.setItem(key, JSON.stringify(list));
+}
+
+function normalizeGamesData(raw) {
+  const list = Array.isArray(raw) ? raw : Array.isArray(raw?.games) ? raw.games : [];
+  return list
+    .map((entry) => {
+      const name = typeof entry?.name === "string" ? entry.name.trim() : "";
+      const url = typeof entry?.url === "string" ? entry.url.trim() : "";
+      if (!name || !url) return null;
+      return { name, url, key: name.toLowerCase() };
+    })
+    .filter(Boolean);
+}
+
+function buildGamesIndex(list) {
+  gamesIndex = new Map(list.map((game) => [game.key, game]));
+}
+
+function loadGamesData() {
+  if (gamesLoaded) return Promise.resolve(gamesData);
+  if (gamesLoading) return gamesLoading;
+  gamesLoading = fetch(gamesCdnUrl)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Failed to load games");
+      }
+      return response.json();
+    })
+    .then((raw) => {
+      const normalized = normalizeGamesData(raw);
+      gamesData = normalized;
+      gamesLoaded = true;
+      buildGamesIndex(normalized);
+      return normalized;
+    })
+    .catch((error) => {
+      gamesData = [];
+      gamesLoaded = false;
+      buildGamesIndex([]);
+      throw error;
+    })
+    .finally(() => {
+      gamesLoading = null;
+    });
+  return gamesLoading;
+}
+
+function ensureGamesPanel() {
+  if (gamesPanel && gamesPanel.isConnected) return gamesPanel;
+  gamesPanel = document.createElement("div");
+  gamesPanel.className = "games-panel";
+  termOutput.insertBefore(gamesPanel, termInputRow);
+  return gamesPanel;
+}
+
+function clearGamesPanel() {
+  if (gamesPanel && gamesPanel.isConnected) {
+    gamesPanel.remove();
+  }
+  gamesPanel = null;
+}
+
+function getFavoriteSet() {
+  return new Set(getStoredList(gamesStorage.favorites).map((name) => name.toLowerCase()));
+}
+
+function isFavorite(name, favoriteSet) {
+  return favoriteSet.has(name.toLowerCase());
+}
+
+function toggleFavorite(name) {
+  const list = getStoredList(gamesStorage.favorites);
+  const lower = name.toLowerCase();
+  const filtered = list.filter((entry) => entry.toLowerCase() !== lower);
+  if (filtered.length === list.length) {
+    filtered.unshift(name);
+  }
+  setStoredList(gamesStorage.favorites, filtered);
+}
+
+function addRecent(name) {
+  const list = getStoredList(gamesStorage.recents);
+  const lower = name.toLowerCase();
+  const next = [name, ...list.filter((entry) => entry.toLowerCase() !== lower)].slice(0, 10);
+  setStoredList(gamesStorage.recents, next);
+}
+
+function highlightMatch(name, query) {
+  if (!query) return escapeHtml(name);
+  const lower = name.toLowerCase();
+  const lowerQuery = query.toLowerCase();
+  const index = lower.indexOf(lowerQuery);
+  if (index === -1) return escapeHtml(name);
+  const before = escapeHtml(name.slice(0, index));
+  const match = escapeHtml(name.slice(index, index + query.length));
+  const after = escapeHtml(name.slice(index + query.length));
+  return `${before}[<span class="games-match">${match}</span>]${after}`;
+}
+
+function buildGameLine(game, index, number, isSelected, isClickable, favoriteSet, query) {
+  const favoriteTag = isFavorite(game.name, favoriteSet) ? " [F]" : "";
+  const name = query ? highlightMatch(game.name, query) : escapeHtml(game.name);
+  const selectedClass = isSelected ? " is-selected" : "";
+  const clickableClass = isClickable ? " is-clickable" : "";
+  return `<div class="games-line${selectedClass}${clickableClass}" data-game-index="${index}"><span class="games-number">${number})</span><span class="games-name">${name}${favoriteTag}</span></div>`;
+}
+
+function updateGamesSelection() {
+  if (!gamesUi.active || !gamesPanel) return;
+  const lines = gamesPanel.querySelectorAll(".games-line[data-game-index]");
+  lines.forEach((line) => {
+    const lineIndex = Number(line.dataset.gameIndex);
+    line.classList.toggle(
+      "is-selected",
+      gamesUi.allowKeyboard && lineIndex === gamesUi.selectionIndex,
+    );
+  });
+  const selected = gamesPanel.querySelector(
+    `.games-line[data-game-index="${gamesUi.selectionIndex}"]`,
+  );
+  if (selected) {
+    selected.scrollIntoView({ block: "nearest" });
+  }
+}
+
+function scrollGamesPanel() {
+  if (!gamesPanel) return;
+  requestAnimationFrame(() => {
+    if (gamesPanel) {
+      gamesPanel.scrollIntoView({ block: "nearest" });
+    }
+    updateGamesSelection();
+  });
+}
+
+function renderGamesPanel(html, visibleGames, allowKeyboard) {
+  const panel = ensureGamesPanel();
+  panel.innerHTML = html;
+  gamesUi.visibleGames = visibleGames;
+  gamesUi.allowKeyboard = allowKeyboard;
+  if (gamesUi.selectionIndex >= visibleGames.length) {
+    gamesUi.selectionIndex = 0;
+  }
+  scrollGamesPanel();
+}
+
+function enterGamesUi() {
+  gamesUi.active = true;
+  gamesUi.selectionIndex = 0;
+  gamesUi.visibleGames = [];
+  updatePrompt();
+}
+
+function exitGamesUi() {
+  gamesUi.active = false;
+  gamesUi.mode = "";
+  gamesUi.visibleGames = [];
+  gamesUi.query = "";
+  clearGamesPanel();
+  updatePrompt();
+}
+
+function renderGamesLoading() {
+  enterGamesUi();
+  gamesUi.mode = "loading";
+  renderGamesPanel(`<div class="games-hint">loading games...</div>`, [], false);
+}
+
+function renderGamesMenu() {
+  enterGamesUi();
+  gamesUi.mode = "menu";
+  gamesUi.query = "";
+  const favoriteSet = getFavoriteSet();
+  const recents = getStoredList(gamesStorage.recents)
+    .map((name) => gamesIndex.get(name.toLowerCase()))
+    .filter(Boolean);
+  const favorites = getStoredList(gamesStorage.favorites)
+    .map((name) => gamesIndex.get(name.toLowerCase()))
+    .filter(Boolean);
+  let number = 1;
+  const visible = [];
+  let html = `<div class="games-section-title">Recent:</div>`;
+  if (recents.length) {
+    recents.forEach((game) => {
+      visible.push(game);
+      html += buildGameLine(
+        game,
+        visible.length - 1,
+        number,
+        number === 1,
+        true,
+        favoriteSet,
+      );
+      number += 1;
+    });
+  } else {
+    html += `<div class="games-empty">No recent games yet</div>`;
+  }
+  html += `<div class="games-section-title">Favorites:</div>`;
+  if (favorites.length) {
+    favorites.forEach((game) => {
+      visible.push(game);
+      html += buildGameLine(
+        game,
+        visible.length - 1,
+        number,
+        false,
+        true,
+        favoriteSet,
+      );
+      number += 1;
+    });
+  } else {
+    html += `<div class="games-empty">No favorites yet</div>`;
+  }
+  html += `<div class="games-hint">&gt; press / to search all games</div>`;
+  html += `<div class="games-hint">arrow keys + enter or click to select</div>`;
+  renderGamesPanel(html, visible, true);
+}
+
+function renderGamesListAll() {
+  enterGamesUi();
+  gamesUi.mode = "list";
+  gamesUi.query = "";
+  const favoriteSet = getFavoriteSet();
+  const visible = gamesData.slice();
+  let html = `<div class="games-section-title">All Games:</div>`;
+  if (!visible.length) {
+    html += `<div class="games-empty">No games available</div>`;
+  } else {
+    visible.forEach((game, index) => {
+      html += buildGameLine(game, index, index + 1, false, true, favoriteSet);
+    });
+  }
+  html += `<div class="games-hint">click to select</div>`;
+  renderGamesPanel(html, visible, false);
+}
+
+function renderGamesSearch() {
+  enterGamesUi();
+  gamesUi.mode = "search";
+  const query = gamesUi.query.trim();
+  const favoriteSet = getFavoriteSet();
+  const matches = query
+    ? gamesData.filter((game) => game.name.toLowerCase().includes(query.toLowerCase()))
+    : [];
+  let html = `<div class="games-hint">&gt; search: ${escapeHtml(query)}</div>`;
+  html += `<div class="games-hint">${matches.length} results</div>`;
+  if (matches.length) {
+    matches.forEach((game, index) => {
+      html += buildGameLine(
+        game,
+        index,
+        index + 1,
+        index === gamesUi.selectionIndex,
+        true,
+        favoriteSet,
+        query,
+      );
+    });
+  }
+  html += `<div class="games-hint">arrow keys + enter or click to select</div>`;
+  html += `<div class="games-hint">press F to favorite</div>`;
+  renderGamesPanel(html, matches, true);
+}
+
+function updateGamesSearchQuery(value) {
+  gamesUi.query = value;
+  gamesUi.selectionIndex = 0;
+  renderGamesSearch();
+}
+
+function enterGamesSearchMode() {
+  gamesUi.query = "";
+  termInput.value = "";
+  updateCursor();
+  renderGamesSearch();
+  focusInput();
+}
+
+function moveGamesSelection(delta) {
+  if (!gamesUi.visibleGames.length) return;
+  const next = (gamesUi.selectionIndex + delta + gamesUi.visibleGames.length) %
+    gamesUi.visibleGames.length;
+  gamesUi.selectionIndex = next;
+  updateGamesSelection();
+}
+
+function selectGameByIndex(index) {
+  const game = gamesUi.visibleGames[index];
+  if (!game) return;
+  addRecent(game.name);
+  const openInNewTab = !document.body.classList.contains("mode-proxy") && homeNewTab;
+  openTarget(game.url, openInNewTab);
+  appendOutput(`Opening ${game.name}`);
+  exitGamesUi();
+}
+
+function handleGamesClick(target) {
+  if (!gamesUi.active) return false;
+  const element = target instanceof Element ? target : target.parentElement;
+  if (!element) return false;
+  const line = element.closest(".games-line[data-game-index]");
+  if (!line) return false;
+  const index = Number(line.dataset.gameIndex);
+  if (Number.isNaN(index)) return false;
+  selectGameByIndex(index);
+  return true;
+}
+
+function handleGamesKeydown(event) {
+  if (!gamesUi.active) return;
+  if (event.key === "/" && gamesUi.mode !== "search") {
+    event.preventDefault();
+    enterGamesSearchMode();
+    return;
+  }
+  if (event.key === "Escape" && gamesUi.mode === "search") {
+    event.preventDefault();
+    termInput.value = "";
+    updateCursor();
+    renderGamesMenu();
+    return;
+  }
+  if (!gamesUi.allowKeyboard) return;
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    moveGamesSelection(1);
+    return;
+  }
+  if (event.key === "ArrowUp") {
+    event.preventDefault();
+    moveGamesSelection(-1);
+    return;
+  }
+  if (event.key.toLowerCase() === "f") {
+    event.preventDefault();
+    const game = gamesUi.visibleGames[gamesUi.selectionIndex];
+    if (game) {
+      toggleFavorite(game.name);
+      if (gamesUi.mode === "search") {
+        renderGamesSearch();
+      } else if (gamesUi.mode === "menu") {
+        renderGamesMenu();
+      }
+    }
+  }
+}
+
 function outputHelp() {
   appendOutput(`wispurl {url}: update the WISP url used
-games: list available game names
-game {gamename}: open a game
+games: open the games menu
+games list: list all games
+game {gamename}: open a game (games menu needed)
 panic {key}: set ctrl+key panic close
 adblock {y/n}: enable or disable adblock
 preventclose {y/n}: toggle leave page warning
@@ -487,13 +901,27 @@ toggle overlay: ctrl + \``);
 }
 
 function handleCommand(value) {
-  appendOutput(`root@splash:~$ ${value}`, "#52ff96");
-
   const lower = value.toLowerCase();
+  const isGamesMenuCommand = lower === "games";
+  const isGamesListCommand = lower === "games list";
+  const isGamesShortcutList = gamesUi.active && lower === "l";
+  const isProcessCommand =
+    pendingConfirm ||
+    gamesUi.active ||
+    isGamesMenuCommand ||
+    isGamesListCommand ||
+    isGamesShortcutList ||
+    lower === "home";
+  appendOutput(
+    `${isProcessCommand ? `${processPrompt} ` : `${defaultPrompt} `}${value}`,
+    "#52ff96",
+  );
+
   if (pendingConfirm) {
     if (lower === "y" || lower === "n") {
       const action = pendingConfirm;
       pendingConfirm = null;
+      updatePrompt();
       if (lower === "y" && action === "home") {
         goHome();
         appendOutput("Returned home");
@@ -505,13 +933,43 @@ function handleCommand(value) {
     }
     return;
   }
+  if (gamesUi.active && !isGamesMenuCommand && !isGamesListCommand && !isGamesShortcutList) {
+    exitGamesUi();
+  }
   if (lower === "help") {
     outputHelp();
     return;
   }
-  if (lower === "games") {
-    const list = Object.keys(games);
-    appendOutput(list.length ? list.join("<br>") : "No games available");
+  if (isGamesMenuCommand) {
+    renderGamesLoading();
+    loadGamesData()
+      .then(() => {
+        renderGamesMenu();
+      })
+      .catch(() => {
+        appendOutput("Failed to load games list", "#ff6b6b");
+        exitGamesUi();
+      });
+    return;
+  }
+  if (isGamesListCommand) {
+    renderGamesLoading();
+    loadGamesData()
+      .then(() => {
+        renderGamesListAll();
+      })
+      .catch(() => {
+        appendOutput("Failed to load games list", "#ff6b6b");
+        exitGamesUi();
+      });
+    return;
+  }
+  if (isGamesShortcutList) {
+    if (!gamesLoaded) {
+      appendOutput("Type games first to load the list", "#ff6b6b");
+      return;
+    }
+    renderGamesListAll();
     return;
   }
   if (lower === "dev") {
@@ -587,6 +1045,7 @@ function handleCommand(value) {
       return;
     }
     pendingConfirm = "home";
+    updatePrompt();
     appendOutput("are you sure? y/n");
     return;
   }
@@ -596,13 +1055,18 @@ function handleCommand(value) {
       appendOutput("Missing game name", "#ff6b6b");
       return;
     }
-    const url = games[name];
-    if (!url) {
+    if (!gamesLoaded) {
+      appendOutput("Type games to load the list first", "#ff6b6b");
+      return;
+    }
+    const game = gamesIndex.get(name);
+    if (!game) {
       appendOutput(`Game not found: ${name}`, "#ff6b6b");
       return;
     }
-    openTarget(url, !document.body.classList.contains("mode-proxy") && homeNewTab);
-    appendOutput(`Opening ${name}`);
+    addRecent(game.name);
+    openTarget(game.url, !document.body.classList.contains("mode-proxy") && homeNewTab);
+    appendOutput(`Opening ${game.name}`);
     return;
   }
   const openInNewTab = !document.body.classList.contains("mode-proxy") && homeNewTab;
@@ -612,13 +1076,51 @@ function handleCommand(value) {
 
 termInputRow.addEventListener("submit", (event) => {
   event.preventDefault();
-  const value = termInput.value;
-  if (!value.trim()) return;
+  const rawValue = termInput.value;
+  const value = rawValue.trim();
+  if (gamesUi.active && gamesUi.allowKeyboard) {
+    if (gamesUi.mode === "search") {
+      if (gamesUi.visibleGames.length) {
+        termInput.value = "";
+        updateCursor();
+        selectGameByIndex(gamesUi.selectionIndex);
+      }
+      return;
+    }
+    if (!value && gamesUi.visibleGames.length) {
+      termInput.value = "";
+      updateCursor();
+      selectGameByIndex(gamesUi.selectionIndex);
+      return;
+    }
+  }
+  if (!value) return;
   termInput.value = "";
-  handleCommand(value.trim());
+  updateCursor();
+  handleCommand(value);
+});
+
+termInput.addEventListener("input", () => {
+  updateCursor();
+  if (gamesUi.active && gamesUi.mode === "search") {
+    updateGamesSearchQuery(termInput.value);
+  }
+});
+
+termInput.addEventListener("click", updateCursor);
+termInput.addEventListener("keyup", updateCursor);
+termInput.addEventListener("focus", updateCursor);
+termInput.addEventListener("blur", updateCursor);
+window.addEventListener("resize", updateCursor);
+
+termOutput.addEventListener("click", (event) => {
+  if (handleGamesClick(event.target)) {
+    focusInput();
+  }
 });
 
 document.addEventListener("keydown", (event) => {
+  handleGamesKeydown(event);
   handleGlobalKeydown(event);
 });
 
@@ -726,7 +1228,9 @@ appendOutput(
   "#a0ffcf",
 );
 appendOutput("enter url to open page, or type help for list of commands", "#d9ffe8");
+updatePrompt();
 focusInput();
+updateCursor();
 if (proxyWatermark) {
   proxyWatermark.addEventListener("click", () => {
     toggleOverlay();
