@@ -41,3 +41,5 @@ or:
 
 
 [credits](https://github.com/rhenryw/SPLASH/blob/main/credits.md)
+
+[games](https://github.com/rhenryw/SPLASHGames) - games are done like this for faster static loading.
