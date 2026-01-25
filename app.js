@@ -1223,7 +1223,6 @@ window.addEventListener("hashchange", () => {
   }
 });
 
-termHeader.textContent = "SPLASH";
 if (watermarkLogo) {
   watermarkLogo.textContent =
     "            __         __ \n  ___ ___  / /__ ____ / / \n (_-</ _ \\ / / _ `(_-</ _ \\\n/___/ .__/_/\\_,_/___/_//_/\n   /_/                    ";

@@ -118,19 +118,13 @@ body {
   background: transparent;
 }
 
-#term-header {
-  color: #7bffb4;
-  font-size: 14px;
-  letter-spacing: 0.2em;
-}
-
 #term-output {
   flex: 1;
   overflow-y: auto;
   font-size: 15px;
   line-height: 1.55;
   padding-right: 8px;
-  margin-top: 16px;
+  margin-top: 0;
 }
 
 #term-status {
