@@ -272,6 +272,19 @@ function setPreventCloseEnabled(next) {
 }
 
 function handleGlobalKeydown(event) {
+  if (event.ctrlKey && event.key.toLowerCase() === "c") {
+    if (pendingConfirm || gamesUi.active) {
+      event.preventDefault();
+      pendingConfirm = null;
+      exitGamesUi();
+      updatePrompt();
+      termInput.value = "";
+      updateCursor();
+      appendOutput("^C");
+      focusInput();
+      return;
+    }
+  }
   if (overlayOpen && event.ctrlKey && event.key.toLowerCase() === "d") {
     event.preventDefault();
     event.stopPropagation();
