@@ -43,3 +43,5 @@ or:
 [credits](https://github.com/rhenryw/SPLASH/blob/main/credits.md)
 
 [games](https://github.com/rhenryw/SPLASHGames) - games are done like this for faster static loading.
+
+[todo](https://github.com/rhenryw/SPLASH/blob/main/todo.md) - not everything I want to do but some stuff
