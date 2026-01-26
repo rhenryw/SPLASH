@@ -4,8 +4,6 @@
 
 [x8r](https://github.com/x8rr) - scramjet implementation
 
-[xpbliss](https://github.com/xpbl) - some code and help
-
 [Mercury Workshop](github.com/MercuryWorkshop/) - scramjet and WISP
 
 [deployWISP](https://github.com/rhenryw/deployWisp) - WISP backend for proxy
@@ -14,10 +12,12 @@
 
 [The Noun Project/InYoung Park](https://thenounproject.com/icon/water-drop-7720877/) - SPLASH favicon
 
+[Amplify](https://amplifydev.tech/) - fix cursor focusing
+
+[xpbliss](https://github.com/xpbl) - some code and help
+
 [DotLYHiyou](https://github.com/DotLYHiyou) - Updated buttons for me
 
 [BinBashBanna/OlyB](https://github.com/BinBashBanana) - Created updated buttons for deployment
-
-[Amplify](https://amplifydev.tech/) - fix cursor focusing
 
 [Titanium Network](github.com/titaniumnetwork-dev/) - Honorable Mention, got me into proxies
