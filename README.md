@@ -48,3 +48,5 @@ You can also deploy to a VPS easily with [SPLASHP](https://github.com/rhenryw/SP
 [games](https://github.com/rhenryw/SPLASHGames) - games are done like this for faster static loading.
 
 [todo](https://github.com/rhenryw/SPLASH/blob/main/todo.md) - not everything I want to do but some stuff
+
+[deployWisp](https://github.com/rhenryw/deployWisp) was used to create the WISP server (`wss://wisp.rhw.one/`) that SPLASH uses.
