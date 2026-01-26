@@ -1,0 +1,6 @@
+- [ ] Add Tor Capabilities
+- [ ] Add a "dummy" UI with buttons and GUI
+- [ ] Add games (assigned to decayed for now, but I doubt he'll get to it)
+- [ ] Fix project structure, maybe make it different files that "build"
+- [x] Add Vite support
+- [X] Fix WISP server
