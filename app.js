@@ -1139,6 +1139,14 @@ document.addEventListener("keydown", (event) => {
   handleGlobalKeydown(event);
 });
 
+document.addEventListener("click", (event) => {
+  const target = event.target;
+  if (target instanceof Element && target.closest(".games-panel")) {
+    return;
+  }
+  focusInput();
+});
+
 window.addEventListener("beforeunload", (event) => {
   if (!preventCloseEnabled) return;
   event.preventDefault();
