@@ -39,6 +39,9 @@ or:
 [![Deploy on Railway](https://binbashbanana.github.io/deploy-buttons/buttons/remade/railway.svg)](https://railway.app/new/template?template=https://github.com/rhenryw/SPLASH)
 [![Deploy to Koyeb](https://binbashbanana.github.io/deploy-buttons/buttons/remade/koyeb.svg)](https://app.koyeb.com/deploy?type=git&repository=github.com/rhenryw/SPLASH&branch=main&name=SPLASH)
 
+You can also deploy to a VPS easily with [SPLASHP](https://github.com/rhenryw/SPLASHP), a reverse proxied version for super easy deployment.
+
+---
 
 [credits](https://github.com/rhenryw/SPLASH/blob/main/credits.md)
 
