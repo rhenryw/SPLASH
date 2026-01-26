@@ -167,13 +167,15 @@ function updateCursor() {
   if (!termCursor || !termCursorMeasure || !termInput) return;
   const isFocused = document.activeElement === termInput;
   termCursor.classList.toggle("hidden", !isFocused);
-  const prefixWidth = termPrefix ? termPrefix.offsetWidth : 0;
+  const rowRect = termInputRow ? termInputRow.getBoundingClientRect() : null;
+  const inputRect = termInput.getBoundingClientRect();
+  const baseLeft = rowRect ? Math.max(0, inputRect.left - rowRect.left) : 0;
   const value = termInput.value || "";
   const selectionStart =
     typeof termInput.selectionStart === "number" ? termInput.selectionStart : value.length;
   termCursorMeasure.textContent = value.slice(0, selectionStart);
   const width = termCursorMeasure.offsetWidth;
-  termCursor.style.left = `${prefixWidth}px`;
+  termCursor.style.left = `${baseLeft}px`;
   termCursor.style.transform = `translate(${width}px, -50%)`;
 }
 
@@ -1169,6 +1171,7 @@ async function init() {
       if (injected) {
         updateMode("mode-proxy");
         openTarget(injected, false);
+        focusInput();
       } else {
         updateMode("mode-terminal");
         appendOutput("Missing url", "#ff6b6b");
@@ -1180,6 +1183,7 @@ async function init() {
       const url = decodeTarget(token);
       updateMode("mode-proxy");
       openInFrame(url);
+      focusInput();
     } catch (error) {
       updateMode("mode-terminal");
       appendOutput("Failed to decode target", "#ff6b6b");
@@ -1187,6 +1191,7 @@ async function init() {
     }
   } else {
     updateMode("mode-terminal");
+    focusInput();
   }
 }
 
