@@ -18,4 +18,6 @@
 
 [BinBashBanna/OlyB](https://github.com/BinBashBanana) - Created updated buttons for deployment
 
+[Amplify](https://amplifydev.tech/) - fix cursor focusing
+
 [Titanium Network](github.com/titaniumnetwork-dev/) - Honorable Mention, got me into proxies
