@@ -245,6 +245,33 @@ function setWispUrl(next) {
   connection.setTransport("/surf/libcurl/index.mjs", [{ websocket: wispUrl }]);
 }
 
+function hasStoredWispUrl() {
+  return localStorage.getItem("splash:wispUrl") !== null || getCookieValue("splash:wispUrl") !== null;
+}
+
+function checkWispServer(url, timeoutMs = 2000) {
+  console.info(`Checking for WISP server at ${url}`);
+  return new Promise((resolve) => {
+    let settled = false;
+    const ws = new WebSocket(url);
+    const finish = (available) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      try {
+        ws.close();
+      } catch (error) {
+        // ignore
+      }
+      resolve(available);
+    };
+    const timer = setTimeout(() => finish(false), timeoutMs);
+    ws.addEventListener("open", () => finish(true));
+    ws.addEventListener("error", () => finish(false));
+    ws.addEventListener("close", () => finish(false));
+  });
+}
+
 function setPanicKey(next) {
   panicKey = next.toLowerCase();
   setSetting("splash:panicKey", panicKey);
@@ -1174,7 +1201,17 @@ async function init() {
   navigator.serviceWorker.ready.then(() => {
     sendAdblockSetting();
   });
-  setWispUrl(wispUrl);
+  if (!hasStoredWispUrl()) {
+    const localWisp = `wss://${window.location.host}/wisp/`;
+    const available = await checkWispServer(localWisp);
+    if (available) {
+      setWispUrl(localWisp);
+    } else {
+      setWispUrl("wss://wisp.rhw.one/");
+    }
+  } else {
+    setWispUrl(wispUrl);
+  }
   await scramjet.init();
   frame.addEventListener("load", () => {
     setProxyLoading(false);
