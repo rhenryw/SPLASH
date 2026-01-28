@@ -272,6 +272,190 @@ function checkWispServer(url, timeoutMs = 2000) {
   });
 }
 
+const splashArtLines = [
+  "                            ",
+  "                  -------   ",
+  "                 ---------  ",
+  "                ----------  ",
+  "               ----------   ",
+  "              ----------    ",
+  "       ----   -------       ",
+  "       -----  -----         ",
+  "         ---- ----          ",
+  "  --------- - --- ------    ",
+  "  ----------- ----------    ",
+  "   -------------------      ",
+  "            -------         ",
+  "                -           ",
+  "                            ",
+];
+
+function hexToRgb(hex) {
+  const value = hex.replace("#", "");
+  return {
+    r: Number.parseInt(value.slice(0, 2), 16),
+    g: Number.parseInt(value.slice(2, 4), 16),
+    b: Number.parseInt(value.slice(4, 6), 16),
+  };
+}
+
+function rgbToHex({ r, g, b }) {
+  return `#${[r, g, b]
+    .map((value) => Math.max(0, Math.min(255, Math.round(value))).toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+function blendHex(start, end, ratio) {
+  const a = hexToRgb(start);
+  const b = hexToRgb(end);
+  return rgbToHex({
+    r: a.r + (b.r - a.r) * ratio,
+    g: a.g + (b.g - a.g) * ratio,
+    b: a.b + (b.b - a.b) * ratio,
+  });
+}
+
+function toHtmlSpaces(text) {
+  return text.replace(/ /g, "&nbsp;");
+}
+
+function getSplashArtHtmlLines() {
+  const start = "#37ff42";
+  const end = "#37ffa6";
+  const total = Math.max(1, splashArtLines.length - 1);
+  return splashArtLines.map((line, index) => {
+    const color = blendHex(start, end, index / total);
+    return `<span style=\"color:${color};white-space:pre;\">${toHtmlSpaces(line)}</span>`;
+  });
+}
+
+function wrapText(value, maxChars) {
+  if (!value) return [""];
+  if (!Number.isFinite(maxChars) || maxChars <= 0) return [value];
+  const words = value.split(" ");
+  const lines = [];
+  let current = "";
+  const pushCurrent = () => {
+    if (current) {
+      lines.push(current);
+      current = "";
+    }
+  };
+  words.forEach((word) => {
+    if (word.length > maxChars) {
+      pushCurrent();
+      for (let i = 0; i < word.length; i += maxChars) {
+        lines.push(word.slice(i, i + maxChars));
+      }
+      return;
+    }
+    if (!current) {
+      current = word;
+      return;
+    }
+    if (current.length + 1 + word.length <= maxChars) {
+      current += ` ${word}`;
+      return;
+    }
+    pushCurrent();
+    current = word;
+  });
+  pushCurrent();
+  return lines.length ? lines : [""];
+}
+
+async function resolveServerIp(hostname) {
+  if (!hostname) return null;
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname)) return hostname;
+  try {
+    const response = await fetch(
+      `https://dns.google/resolve?name=${encodeURIComponent(hostname)}&type=A`,
+    );
+    if (!response.ok) return null;
+    const payload = await response.json();
+    const answer = Array.isArray(payload?.Answer) ? payload.Answer.find((item) => item?.data) : null;
+    return answer?.data || null;
+  } catch (error) {
+    return null;
+  }
+}
+
+async function resolveClientIp() {
+  try {
+    const response = await fetch("https://api.ipify.org?format=json");
+    if (!response.ok) return null;
+    const payload = await response.json();
+    return typeof payload?.ip === "string" ? payload.ip : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+async function outputInfo() {
+  const artHtmlLines = getSplashArtHtmlLines();
+  const maxArtWidth = Math.max(...splashArtLines.map((line) => line.length));
+  const emptyArt = "&nbsp;".repeat(maxArtWidth);
+  const host = window.location.host;
+  const hostname = window.location.hostname;
+  const [clientIp, serverIp] = await Promise.all([resolveClientIp(), resolveServerIp(hostname)]);
+  const infoLines = [
+    "set wispurl",
+    `wisp url: ${wispUrl}`,
+    `client ip: ${clientIp || "unknown"}`,
+    `server: ${host}${serverIp ? ` (${serverIp})` : ""}`,
+    `adblock: ${adblockEnabled ? "on" : "off"}`,
+    `prevent close: ${preventCloseEnabled ? "on" : "off"}`,
+    `new tab: ${homeNewTab ? "on" : "off"}`,
+    `panic key: ${panicKey ? `ctrl+${panicKey}` : "unset"}`,
+    `mode: ${document.body.classList.contains("mode-proxy") ? "proxy" : "terminal"}`,
+    `user agent: ${navigator.userAgent}`,
+    `viewport: ${window.innerWidth}x${window.innerHeight}`,
+  ];
+
+  const viewportWidth = termOutput?.getBoundingClientRect().width || window.innerWidth;
+  const isSmallViewport = viewportWidth < 720;
+
+  if (isSmallViewport) {
+    artHtmlLines.forEach((line) => appendOutput(line));
+    infoLines.forEach((line) => appendOutput(escapeHtml(line)));
+    return;
+  }
+
+  const measureTarget = termCursorMeasure || termInput;
+  let charWidth = 8;
+  if (measureTarget) {
+    const previous = measureTarget.textContent;
+    measureTarget.textContent = "M";
+    charWidth = measureTarget.offsetWidth || charWidth;
+    measureTarget.textContent = previous;
+  }
+  const gapChars = 2;
+  let maxInfoChars = Math.floor(viewportWidth / charWidth - maxArtWidth - gapChars);
+  if (!Number.isFinite(maxInfoChars) || maxInfoChars < 20) {
+    maxInfoChars = 20;
+  }
+
+  const rows = [];
+  let artIndex = 0;
+  infoLines.forEach((line) => {
+    const wrapped = wrapText(line, maxInfoChars);
+    wrapped.forEach((segment) => {
+      const artHtml =
+        artHtmlLines[artIndex] || `<span style=\"white-space:pre;\">${emptyArt}</span>`;
+      rows.push({ artHtml, info: segment });
+      artIndex += 1;
+    });
+  });
+  for (; artIndex < artHtmlLines.length; artIndex += 1) {
+    rows.push({ artHtml: artHtmlLines[artIndex], info: "" });
+  }
+
+  rows.forEach((row) => {
+    const info = row.info ? `&nbsp;&nbsp;${escapeHtml(row.info)}` : "";
+    appendOutput(`${row.artHtml}${info}`);
+  });
+}
+
 function setPanicKey(next) {
   panicKey = next.toLowerCase();
   setSetting("splash:panicKey", panicKey);
@@ -936,6 +1120,7 @@ function handleGamesKeydown(event) {
 
 function outputHelp() {
   appendOutput(`wispurl {url}: update the WISP url used
+info: show system info
 games: open the games menu
 games list: list all games
 game {gamename}: open a game (games menu needed)
@@ -1024,6 +1209,10 @@ function handleCommand(value) {
   }
   if (lower === "dev") {
     handleDev();
+    return;
+  }
+  if (lower === "info") {
+    outputInfo();
     return;
   }
   if (lower.startsWith("wispurl ")) {
