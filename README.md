@@ -11,6 +11,8 @@ SPLASH is a modern web proxy with a user interface similar to a terminal.
 
 For a list of commands, run `help`.
 
+You can also inject links by adding `/#inject={url}` after the base url
+
 ## Development
 
 Use Vite: `npx vite`, `bunx vite`, or `deno run npm:vite` whichever floats your boat
