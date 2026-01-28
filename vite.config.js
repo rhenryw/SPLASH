@@ -1,6 +1,4 @@
-import { defineConfig } from "vite";
-
-export default defineConfig({
+export default {
   assetsInclude: ["**/*.wasm", "**/*.wasm.wasm"],
   plugins: [
     {
@@ -14,4 +12,4 @@ export default defineConfig({
       },
     },
   ],
-});
+};

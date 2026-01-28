@@ -125,6 +125,12 @@ body {
   line-height: 1.55;
   padding-right: 8px;
   margin-top: 0;
+  scrollbar-width: none;
+}
+
+#term-output::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 #term-status {

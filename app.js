@@ -451,6 +451,9 @@ function toggleOverlay() {
   if (overlayOpen) {
     updatePrompt();
     setOverlayInput(getDecodedLocation() || currentTarget);
+    if (termOutput) {
+      termOutput.scrollTop = termOutput.scrollHeight;
+    }
     focusInput();
     startLocationPolling();
   } else {
@@ -463,11 +466,16 @@ function goHome() {
   overlayOpen = false;
   document.body.classList.remove("overlay-open");
   currentTarget = "";
-  window.location.hash = "";
+  lastHashValue = "";
+  setLocationLabel("");
+  if (window.location.pathname !== "/" || window.location.hash) {
+    history.replaceState(null, "", "/");
+  }
   updateMode("mode-terminal");
   frame.src = "about:blank";
   setOverlayInput("");
   updatePrompt();
+  focusInput();
 }
 
 function handleDev() {
@@ -992,10 +1000,14 @@ function handleCommand(value) {
     return;
   }
   if (lower.startsWith("wispurl ")) {
-    const next = value.slice(8).trim();
+    let next = value.slice(8).trim();
     if (!next) {
       appendOutput("Missing url", "#ff6b6b");
       return;
+    }
+    // Add trailing slash if missing
+    if (!next.endsWith("/")) {
+      next = next + "/";
     }
     setWispUrl(next);
     appendOutput(`WISP set to ${next}`);
