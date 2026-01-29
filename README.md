@@ -48,6 +48,10 @@ or:
 > You can also deploy to a VPS in one click with [SPLASHP](https://github.com/rhenryw/SPLASHP), a reverse proxied version for super easy deployment.
 
 ---
+Contributing
+---
+If you want to contribute, please fork and then open a Pull Request. SPLASH is very community-open and most PRs will get merged within 48 hours.
+
 
 [credits](https://github.com/rhenryw/SPLASH/blob/main/credits.md)
 
