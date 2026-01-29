@@ -50,8 +50,7 @@ or:
 ---
 Contributing
 ---
-If you want to contribute, please fork and then open a Pull Request. SPLASH is very community-open and most PRs will get merged within 48 hours.
-
+See [CONTRIBUTING.md](https://github.com/rhenryw/SPLASH/blob/main/CONTRIBUTING.md)
 
 [credits](https://github.com/rhenryw/SPLASH/blob/main/credits.md)
 
