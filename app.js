@@ -606,7 +606,7 @@ function startFrameReadyWatch() {
     }
     try {
       const doc = frame.contentDocument;
-      if (doc && (doc.readyState === "interactive" || doc.readyState === "complete")) {
+      if (doc && doc.readyState === "complete") {
         setProxyLoading(false);
       }
     } catch (error) {}
