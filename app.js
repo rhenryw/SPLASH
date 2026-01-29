@@ -279,10 +279,10 @@ function openTarget(raw, inNewTab) {
   openInFrame(url);
 }
 
-function setWispUrl(next) {
+async function setWispUrl(next) {
   wispUrl = next;
   setSetting("splash:wispUrl", next);
-  connection.setTransport("/surf/libcurl/index.mjs", [{ websocket: wispUrl }]);
+  await connection.setTransport("/surf/libcurl/index.mjs", [{ websocket: wispUrl }]);
 }
 
 function hasStoredWispUrl() {
@@ -1265,8 +1265,13 @@ function handleCommand(value) {
     if (!next.endsWith("/")) {
       next = next + "/";
     }
-    setWispUrl(next);
-    appendOutput(`WISP set to ${next}`);
+    setWispUrl(next)
+      .then(() => {
+        appendOutput(`WISP set to ${next}`);
+      })
+      .catch(() => {
+        appendOutput("Failed to update WISP transport", "#ff6b6b");
+      });
     return;
   }
   if (lower.startsWith("panic ")) {
@@ -1435,12 +1440,12 @@ async function init() {
     const localWisp = `wss://${window.location.host}/wisp/`;
     const available = await checkWispServer(localWisp);
     if (available) {
-      setWispUrl(localWisp);
+      await setWispUrl(localWisp);
     } else {
-      setWispUrl("wss://wisp.rhw.one/");
+      await setWispUrl("wss://wisp.rhw.one/");
     }
   } else {
-    setWispUrl(wispUrl);
+    await setWispUrl(wispUrl);
   }
   await scramjet.init();
   frame.addEventListener("load", () => {

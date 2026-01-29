@@ -140,6 +140,29 @@ function encodeTarget(url) {
   return vigenereEncode(toBase64(url), cipherKey);
 }
 
+function deleteScramjetDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase("$scramjet");
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+    request.onblocked = () => resolve();
+  });
+}
+
+async function ensureScramjetConfig() {
+  try {
+    await scramjet.loadConfig();
+  } catch (error) {
+    const message = error && typeof error.message === "string" ? error.message : "";
+    if (error?.name === "NotFoundError" || message.includes("object store")) {
+      await deleteScramjetDb();
+      await scramjet.loadConfig();
+      return;
+    }
+    throw error;
+  }
+}
+
 async function handleRequest(event) {
   if (event.request.mode === "navigate" && event.request.destination === "document") {
     const url = new URL(event.request.url);
@@ -153,7 +176,7 @@ async function handleRequest(event) {
       return Response.redirect("/", 302);
     }
   }
-  await scramjet.loadConfig();
+  await ensureScramjetConfig();
 
   if (scramjet.route(event)) {
     const response = await scramjet.fetch(event);

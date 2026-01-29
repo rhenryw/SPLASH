@@ -117,13 +117,35 @@ function isBlocked(hostname, pathname) {
   });
 }
 
+function deleteScramjetDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase("$scramjet");
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+    request.onblocked = () => resolve();
+  });
+}
+
+async function ensureScramjetConfig() {
+  try {
+    await scramjet.loadConfig();
+  } catch (error) {
+    const message = error && typeof error.message === "string" ? error.message : "";
+    if (error?.name === "NotFoundError" || message.includes("object store")) {
+      await deleteScramjetDb();
+      await scramjet.loadConfig();
+      return;
+    }
+    throw error;
+  }
+}
 
 /**
  * @param {FetchEvent} event
  * @returns {Promise<Response>}
  */
 async function handleRequest(event) {
-  await scramjet.loadConfig();
+  await ensureScramjetConfig();
 
   if (scramjet.route(event)) {
     const response = await scramjet.fetch(event);

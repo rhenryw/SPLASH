@@ -133,4 +133,3 @@
     }),
     console.debug("bare-mux: running v2.1.7 (build c56d286)");
 })();
-//# sourceMappingURL=worker.js.map
