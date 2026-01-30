@@ -146,46 +146,6 @@ function setSetting(name, value) {
   setCookieValue(name, value);
 }
 
-const httpsRedirectCountKey = "splash:httpsRedirectCount";
-const httpsRedirectUntilKey = "splash:httpsRedirectUntil";
-
-async function checkHttpsAvailable(url) {
-  try {
-    await fetch(url, { method: "HEAD", mode: "no-cors", cache: "no-store" });
-    return true;
-  } catch (error) {
-    return false;
-  }
-}
-
-async function tryHttpsRedirect() {
-  if (window.location.protocol !== "http:") {
-    localStorage.removeItem(httpsRedirectCountKey);
-    localStorage.removeItem(httpsRedirectUntilKey);
-    return false;
-  }
-  const now = Date.now();
-  const until = Number.parseInt(localStorage.getItem(httpsRedirectUntilKey) || "0", 10);
-  if (Number.isFinite(until) && until > now) {
-    return false;
-  }
-  const count = Number.parseInt(localStorage.getItem(httpsRedirectCountKey) || "0", 10);
-  if (count >= 3) {
-    localStorage.setItem(httpsRedirectUntilKey, String(now + 30 * 60 * 1000));
-    localStorage.setItem(httpsRedirectCountKey, "0");
-    return false;
-  }
-  const next = new URL(window.location.href);
-  next.protocol = "https:";
-  const available = await checkHttpsAvailable(next.toString());
-  if (!available) {
-    return false;
-  }
-  localStorage.setItem(httpsRedirectCountKey, String(count + 1));
-  window.location.replace(next.toString());
-  return true;
-}
-
 function escapeHtml(value) {
   return value
     .replace(/&/g, "&amp;")
@@ -606,7 +566,7 @@ function startFrameReadyWatch() {
     }
     try {
       const doc = frame.contentDocument;
-      if (doc && doc.readyState === "complete") {
+      if (doc && (doc.readyState === "interactive" || doc.readyState === "complete")) {
         setProxyLoading(false);
       }
     } catch (error) {}
@@ -1401,22 +1361,6 @@ termInput.addEventListener("focus", updateCursor);
 termInput.addEventListener("blur", updateCursor);
 window.addEventListener("resize", updateCursor);
 
-const isLocalHost = (hostname) => {
-  if (hostname === "localhost" || hostname.endsWith(".localhost")) return true;
-  if (hostname === "0.0.0.0") return true;
-  if (/^127(?:\.\d{1,3}){3}$/.test(hostname)) return true;
-  return false;
-};
-let pendingHttpsRedirect =
-  window.location.protocol === "http:" && !isLocalHost(window.location.hostname);
-const runHttpsRedirectOnce = () => {
-  if (!pendingHttpsRedirect) return;
-  pendingHttpsRedirect = false;
-  tryHttpsRedirect();
-};
-
-window.addEventListener("pointerdown", runHttpsRedirectOnce, { once: true });
-
 termOutput.addEventListener("click", (event) => {
   if (handleGamesClick(event.target)) {
     focusInput();
@@ -1447,7 +1391,6 @@ navigator.serviceWorker.addEventListener("controllerchange", () => {
 });
 
 async function init() {
-  if (await tryHttpsRedirect()) return;
   navigator.serviceWorker.register("/splash/sw.js");
   navigator.serviceWorker.ready.then(() => {
     sendAdblockSetting();
