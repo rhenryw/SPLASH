@@ -146,6 +146,15 @@ function setSetting(name, value) {
   setCookieValue(name, value);
 }
 
+function deleteScramjetDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase("$scramjet");
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+    request.onblocked = () => resolve();
+  });
+}
+
 function escapeHtml(value) {
   return value
     .replace(/&/g, "&amp;")
@@ -1406,7 +1415,17 @@ async function init() {
   } else {
     await setWispUrl(wispUrl);
   }
-  await scramjet.init();
+  try {
+    await scramjet.init();
+  } catch (error) {
+    const message = error && typeof error.message === "string" ? error.message : "";
+    if (error?.name === "NotFoundError" || message.includes("object store")) {
+      await deleteScramjetDb();
+      await scramjet.init();
+    } else {
+      throw error;
+    }
+  }
   frame.addEventListener("load", () => {
     setProxyLoading(false);
     attachFrameHotkeys();
