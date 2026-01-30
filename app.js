@@ -1401,6 +1401,22 @@ termInput.addEventListener("focus", updateCursor);
 termInput.addEventListener("blur", updateCursor);
 window.addEventListener("resize", updateCursor);
 
+const isLocalHost = (hostname) => {
+  if (hostname === "localhost" || hostname.endsWith(".localhost")) return true;
+  if (hostname === "0.0.0.0") return true;
+  if (/^127(?:\.\d{1,3}){3}$/.test(hostname)) return true;
+  return false;
+};
+let pendingHttpsRedirect =
+  window.location.protocol === "http:" && !isLocalHost(window.location.hostname);
+const runHttpsRedirectOnce = () => {
+  if (!pendingHttpsRedirect) return;
+  pendingHttpsRedirect = false;
+  tryHttpsRedirect();
+};
+
+window.addEventListener("pointerdown", runHttpsRedirectOnce, { once: true });
+
 termOutput.addEventListener("click", (event) => {
   if (handleGamesClick(event.target)) {
     focusInput();
