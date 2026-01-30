@@ -25,7 +25,7 @@
     <script>
       // Lol it's really easy nvm
       if (location.protocol !== 'https:') {
-          location.replace(`https://${location.host}${location.pathname}${location.search}`);
+        location.replace(`https://${location.host}${location.pathname}${location.search}${location.hash}`);
       }
     </script>
   </head>
