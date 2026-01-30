@@ -155,6 +155,27 @@ function deleteScramjetDb() {
   });
 }
 
+async function ensureScramjetDb() {
+  if (typeof indexedDB.databases !== "function") return;
+  const dbs = await indexedDB.databases();
+  const exists = dbs.some((db) => db && db.name === "$scramjet");
+  if (!exists) return;
+  await new Promise((resolve, reject) => {
+    const request = indexedDB.open("$scramjet");
+    request.onsuccess = () => {
+      const db = request.result;
+      const hasConfig = db.objectStoreNames.contains("config");
+      db.close();
+      if (hasConfig) {
+        resolve();
+        return;
+      }
+      deleteScramjetDb().then(resolve, reject);
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
 function escapeHtml(value) {
   return value
     .replace(/&/g, "&amp;")
@@ -1416,6 +1437,7 @@ async function init() {
     await setWispUrl(wispUrl);
   }
   try {
+    await ensureScramjetDb();
     await scramjet.init();
   } catch (error) {
     const message = error && typeof error.message === "string" ? error.message : "";
