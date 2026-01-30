@@ -62,9 +62,6 @@ const scramjet = new ScramjetController({
     sync: "/surf/scram/scramjet.sync.js",
   },
   prefix: "/splash/surf/",
-  flags: {
-    sourcemaps: false,
-  },
 });
 
 function toBase64(value) {
