@@ -23,8 +23,12 @@
     <meta property="twitter:description" content="a modern web proxy with terminal-like interface" />
     <meta property="twitter:image" content="https://splash.rhw.one/card.png" />
     <script>
-      // Lol it's really easy nvm
-      if (location.protocol !== 'https:') {
+      // Only redirect to HTTPS if NOT on localhost or 127.0.0.1, so local dev still works.
+      if (
+        location.protocol !== 'https:' &&
+        location.hostname !== 'localhost' &&
+        location.hostname !== '127.0.0.1'
+      ) {
         location.replace(`https://${location.host}${location.pathname}${location.search}${location.hash}`);
       }
     </script>
