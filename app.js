@@ -1515,7 +1515,7 @@ preventclose {y/n}: toggle leave page warning
 home: confirm return to home (overlay only)
 exit: return to home (overlay only)
 newtab {y/n}: new tab from home
-dev: dev tools placeholder
+dev: inject devtools into the current page (overlay only)
 type a url or search term to open
 toggle overlay: ctrl + \``);
 }
