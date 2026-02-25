@@ -8,7 +8,8 @@ if (navigator.userAgent.includes("Firefox")) {
 importScripts("/surf/scram/scramjet.all.js");
 
 const { ScramjetServiceWorker } = $scramjetLoadWorker();
-const scramjet = new ScramjetServiceWorker();
+let scramjet = null;
+let scramjetReady = false;
 
 const splashPrefix = "/splash/surf/";
 const cipherKey = "SPLASH";
@@ -149,6 +150,64 @@ function deleteScramjetDb() {
   });
 }
 
+async function checkScramjetDb() {
+  await new Promise((resolve, reject) => {
+    const request = indexedDB.open("$scramjet");
+    request.onsuccess = () => {
+      const db = request.result;
+      const hasCookies = db.objectStoreNames.contains("cookies");
+      db.close();
+      if (hasCookies) {
+        resolve();
+        return;
+      }
+      deleteScramjetDb().then(resolve, reject);
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function initScramjet() {
+  if (scramjetReady) return;
+  await checkScramjetDb();
+  scramjet = new ScramjetServiceWorker();
+  scramjet.addEventListener("request", (e) => {
+    if (adblockEnabled && isBlocked(e.url.hostname, e.url.pathname)) {
+      e.response = new Response("Site Blocked", { status: 403 });
+      return;
+    }
+
+    if (playgroundData && e.url.href.startsWith(playgroundData.origin)) {
+      const routes = {
+        "/": { content: playgroundData.html, type: "text/html" },
+        "/style.css": { content: playgroundData.css, type: "text/css" },
+        "/script.js": {
+          content: playgroundData.js,
+          type: "application/javascript",
+        },
+      };
+
+      const route = routes[e.url.pathname];
+
+      if (route) {
+        const headers = { "content-type": route.type };
+        e.response = new Response(route.content, { headers });
+        e.response.rawHeaders = headers;
+        e.response.rawResponse = {
+          body: e.response.body,
+          headers: headers,
+          status: e.response.status,
+          statusText: e.response.statusText,
+        };
+        e.response.finalURL = e.url.toString();
+      } else {
+        e.response = new Response("empty response", { headers: {} });
+      }
+    }
+  });
+  scramjetReady = true;
+}
+
 async function ensureScramjetConfig() {
   try {
     await scramjet.loadConfig();
@@ -156,6 +215,7 @@ async function ensureScramjetConfig() {
     const message = error && typeof error.message === "string" ? error.message : "";
     if (error?.name === "NotFoundError" || message.includes("object store")) {
       await deleteScramjetDb();
+      scramjet = new ScramjetServiceWorker();
       await scramjet.loadConfig();
       return;
     }
@@ -176,6 +236,7 @@ async function handleRequest(event) {
       return Response.redirect("/", 302);
     }
   }
+  await initScramjet();
   await ensureScramjetConfig();
 
   if (scramjet.route(event)) {
@@ -219,40 +280,5 @@ self.addEventListener("message", ({ data }) => {
   }
   if (data.type === "adblock") {
     adblockEnabled = data.enabled === true;
-  }
-});
-
-scramjet.addEventListener("request", (e) => {
-  if (adblockEnabled && isBlocked(e.url.hostname, e.url.pathname)) {
-    e.response = new Response("Site Blocked", { status: 403 });
-    return;
-  }
-
-  if (playgroundData && e.url.href.startsWith(playgroundData.origin)) {
-    const routes = {
-      "/": { content: playgroundData.html, type: "text/html" },
-      "/style.css": { content: playgroundData.css, type: "text/css" },
-      "/script.js": {
-        content: playgroundData.js,
-        type: "application/javascript",
-      },
-    };
-
-    const route = routes[e.url.pathname];
-
-    if (route) {
-      const headers = { "content-type": route.type };
-      e.response = new Response(route.content, { headers });
-      e.response.rawHeaders = headers;
-      e.response.rawResponse = {
-        body: e.response.body,
-        headers: headers,
-        status: e.response.status,
-        statusText: e.response.statusText,
-      };
-      e.response.finalURL = e.url.toString();
-    } else {
-      e.response = new Response("empty response", { headers: {} });
-    }
   }
 });
