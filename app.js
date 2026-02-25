@@ -166,15 +166,7 @@ let gamesUi = {
 };
 
 const connection = new BareMux.BareMuxConnection("/surf/baremux/worker.js");
-const { ScramjetController } = $scramjetLoadController();
-const scramjet = new ScramjetController({
-  files: {
-    all: "/surf/scram/scramjet.all.js",
-    wasm: "/surf/scram/scramjet.wasm.wasm",
-    sync: "/surf/scram/scramjet.sync.js",
-  },
-  prefix: "/splash/surf/",
-});
+let scramjet = null;
 
 function toBase64(value) {
   const bytes = new TextEncoder().encode(value);
@@ -276,9 +268,9 @@ async function ensureScramjetDb() {
     const request = indexedDB.open("$scramjet");
     request.onsuccess = () => {
       const db = request.result;
-      const hasConfig = db.objectStoreNames.contains("config");
+      const hasCookies = db.objectStoreNames.contains("cookies");
       db.close();
-      if (hasConfig) {
+      if (hasCookies) {
         resolve();
         return;
       }
@@ -1817,16 +1809,24 @@ async function init() {
   }
   try {
     await ensureScramjetDb();
-    await scramjet.init();
   } catch (error) {
     const message = error && typeof error.message === "string" ? error.message : "";
     if (error?.name === "NotFoundError" || message.includes("object store")) {
       await deleteScramjetDb();
-      await scramjet.init();
     } else {
       throw error;
     }
   }
+  const { ScramjetController } = $scramjetLoadController();
+  scramjet = new ScramjetController({
+    files: {
+      all: "/surf/scram/scramjet.all.js",
+      wasm: "/surf/scram/scramjet.wasm.wasm",
+      sync: "/surf/scram/scramjet.sync.js",
+    },
+    prefix: "/splash/surf/",
+  });
+  await scramjet.init();
   frame.addEventListener("load", () => {
     setProxyLoading(false);
     attachFrameHotkeys();
