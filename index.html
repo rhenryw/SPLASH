@@ -32,11 +32,16 @@
         location.replace(`https://${location.host}${location.pathname}${location.search}${location.hash}`);
       }
     </script>
-    <script
-    src="https://analytics.rhw.one/api/script.js"
-    data-site-id="14c2d3e39fbb"
-    defer
-    ></script>
+    <!-- I hate GA4 but rybbit isn't working -->
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-WDHVNCL11H"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-WDHVNCL11H');
+    </script>
   </head>
   <body class="mode-terminal">
     <div id="app">
