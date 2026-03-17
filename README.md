@@ -5,6 +5,13 @@
   root@splash:~$ a modern web proxy
 </h2>
 
+![Discord](https://img.shields.io/discord/1345600742513311744?style=for-the-badge&logo=discord&logoColor=%235865F2&label=Join%20the%20discord!&color=%235865F2&link=https%3A%2F%2Fdiscord.gg%2Fn5AfXS5eTP)
+
+
+> [!NOTE]
+> I am currently working on SPLASHv2, so updates here may be slow or not happen. Quality updates to fix critical bugs will still be applied.
+
+
 SPLASH - **S**ecure **P**roxy for **L**ive **A**udiovisual **SH**ell
 
 SPLASH is a modern web proxy with a user interface similar to a terminal.
