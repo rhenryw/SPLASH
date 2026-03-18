@@ -65,4 +65,5 @@ See [CONTRIBUTING.md](https://github.com/rhenryw/SPLASH/blob/main/CONTRIBUTING.m
 
 [todo](https://github.com/rhenryw/SPLASH/blob/main/todo.md) - not everything I want to do but some stuff
 
-[deployWisp](https://github.com/rhenryw/deployWisp) was used to create the WISP server (`wss://wisp.rhw.one/`) that SPLASH uses.
+[deployWisp](https://github.com/rhenryw/deployRay) was used to create the WISP server (`wss://wisp.rhw.one/wisp/`) that SPLASH uses.
+e
