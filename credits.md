@@ -14,6 +14,8 @@
 
 [Amplify](https://amplifydev.tech/) - fix cursor focusing
 
+[DosX-dev](https://github.com/DosX-dev) - Static IRT Obfuscation
+
 [xpbliss](https://github.com/xpbl) - some code and help
 
 [DotLYHiyou](https://github.com/DotLYHiyou) - Updated buttons for me
